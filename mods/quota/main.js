@@ -81,7 +81,11 @@ async function load() {
     at: Date.now(),
     providers: (data.providers ?? []).map(p => ({
       id: p.provider, label: p.label ?? p.provider, plan: p.plan ?? null, status: p.state?.status ?? null,
-      windows: (p.windows ?? []).filter(w => typeof w.percentUsed === "number")
+      // quota-axi 0.1.69 reports windows as percentRemaining (percentUsed only survives
+      // inside shareOf blocks); derive percentUsed so the bar keeps one field downstream.
+      windows: (p.windows ?? [])
+        .map(w => ({ ...w, percentUsed: w.percentUsed ?? (w.percentRemaining != null ? 100 - w.percentRemaining : null) }))
+        .filter(w => typeof w.percentUsed === "number")
         .map(w => ({ id: w.id, label: w.label, kind: w.kind, percentUsed: w.percentUsed, resetsAt: w.resetsAt ?? null, windowSeconds: w.windowSeconds ?? null })),
     })),
   };
